@@ -3,7 +3,7 @@ import typer
 import api
 
 
-def main(prompt: str = typer.Option(..., prompt=True)):
+def main(prompt: str = typer.Option(..., prompt=True), shell: bool = False, chat: bool = False):
     """
     Entrypoint.
 
