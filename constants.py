@@ -38,10 +38,11 @@ You should always generate short suggestions for the next user turns that are re
 """
 
 SHELL_INSTRUCTION = """
-If the prompt begins with a programming language, eg. 'bash:', 'fish:' or 'python:' you should generate code in that language and follow these rules:
+You translating written instructions into shell commands.
+The shell commands provided should be POSIX-compliant.
 Do not wrap the code in a code block.
 Do not generate triple backticks.
-Generate only a single line of code.
+You MUST generate only a single line of code.
 Don't write any explanations.
 You may not generate any answer that is longer than 1 line.
 Do not include any header.

@@ -3,7 +3,7 @@ import json
 import requests
 
 from auth import get_bearer
-from constants import BASE_INSTRUCTION, SHELL_INSTRUCTION
+from constants import BASE_INSTRUCTION, SHELL_INSTRUCTION, CHAT_INSTRUCTION
 from errors import TokenExpirationError
 
 headers = {
@@ -21,16 +21,7 @@ headers = {
 
 json_data = {
     "intent": True,
-    "messages": [
-        {
-            "content": BASE_INSTRUCTION,
-            "role": "system",
-        },
-        {
-            "content": SHELL_INSTRUCTION,
-            "role": "system",
-        },
-    ],
+    "messages": [],
     "model": "copilot-chat",
     "n": 1,
     "stream": True,
@@ -43,18 +34,32 @@ class ChatQuery:
     def __init__(
         self,
         prompt: str,
-        state=json_data,
+        messages=[],
         shell: bool = False,
         chat: bool = False,
         explain: bool = False,
     ):
         self.prompt = prompt
-        self.state = state
         self.shell = shell
         self.chat = chat
         self.explain = explain
 
         self.bearer_token = get_bearer()
+        self.state = self.init_state()
+
+    def init_state(self):
+        state = json_data.copy()
+
+        self.add_message(state, BASE_INSTRUCTION, "system")
+        if self.shell:
+            self.add_message(state, SHELL_INSTRUCTION, "system")
+        if self.chat:
+            self.add_message(state, CHAT_INSTRUCTION, "system")
+
+        return state
+
+    def add_message(self, state, content: str, role: str):
+        state["messages"].append({"content": content, "role": role})
 
     def get_answer_stream(self):
         headers["authorization"] = f"Bearer {self.bearer_token}"
@@ -66,7 +71,7 @@ class ChatQuery:
         return s.post(
             "https://copilot-proxy.githubusercontent.com/v1/chat/completions",
             headers=headers,
-            json=json_data,
+            json=self.state,
             stream=True,
         )
 
