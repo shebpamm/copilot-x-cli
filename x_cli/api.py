@@ -2,9 +2,9 @@ import json
 
 import requests
 
-from auth import get_bearer
-from constants import BASE_INSTRUCTION, SHELL_INSTRUCTION, CHAT_INSTRUCTION
-from errors import TokenExpirationError
+from .auth import get_bearer
+from .constants import BASE_INSTRUCTION, SHELL_INSTRUCTION, CHAT_INSTRUCTION
+from .errors import TokenExpirationError
 
 headers = {
     "x-request-id": "9d4f79c9-7104-4e24-a3ac-73349f95af63",

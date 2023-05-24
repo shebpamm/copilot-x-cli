@@ -1,7 +1,7 @@
 """CLI interface for using copilot-x chat."""
 import typer
 
-import api
+from . import api
 
 
 def main(

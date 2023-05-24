@@ -1,7 +1,16 @@
 { pkgs, ... }:
 
 {
-  packages = with pkgs; [ ];
-  languages.python.enable = true;
-  languages.python.package = pkgs.python311.withPackages (ps: with ps; [ requests typer colorama rich shellingham typing-extensions ]);
+  packages = with pkgs; [
+
+  ];
+  languages.python =
+    {
+      enable = true;
+      poetry = {
+        enable = true;
+        activate.enable = true;
+        install.enable = true;
+      };
+    };
 }
