@@ -1,9 +1,10 @@
 import json
+
+import requests
+
 from auth import get_bearer
 from constants import BASE_INSTRUCTION, SHELL_INSTRUCTION
 from errors import TokenExpirationError
-
-import requests
 
 headers = {
     "x-request-id": "9d4f79c9-7104-4e24-a3ac-73349f95af63",
@@ -38,35 +39,50 @@ json_data = {
 }
 
 
-def get_answer_stream(prompt, state=json_data):
-    bearer_token = get_bearer()
-    headers["authorization"] = f"Bearer {bearer_token}"
+class ChatQuery:
+    def __init__(
+        self,
+        prompt: str,
+        state=json_data,
+        shell: bool = False,
+        chat: bool = False,
+        explain: bool = False,
+    ):
+        self.prompt = prompt
+        self.state = state
+        self.shell = shell
+        self.chat = chat
+        self.explain = explain
 
-    state["messages"].append({"content": prompt, "role": "user"})
+        self.bearer_token = get_bearer()
 
-    s = requests.Session()
+    def get_answer_stream(self):
+        headers["authorization"] = f"Bearer {self.bearer_token}"
 
-    return s.post(
-        "https://copilot-proxy.githubusercontent.com/v1/chat/completions",
-        headers=headers,
-        json=json_data,
-        stream=True,
-    )
+        self.state["messages"].append({"content": self.prompt, "role": "user"})
 
+        s = requests.Session()
 
-def get_answer_blocking(prompt):
-    answer = ""
-    with get_answer_stream(prompt) as resp:
-        for line in resp.iter_lines():
-            if line == b"token expired":
-                raise TokenExpirationError
-            if line == b"data: [DONE]":
-                break
+        return s.post(
+            "https://copilot-proxy.githubusercontent.com/v1/chat/completions",
+            headers=headers,
+            json=json_data,
+            stream=True,
+        )
 
-            if line.startswith(b"data:"):
-                chunk = json.loads(line.split(b"data:")[1])
-                delta = chunk["choices"][0]["delta"]
-                if "content" in delta:
-                    answer += delta["content"]
+    def get_answer_blocking(self):
+        answer = ""
+        with self.get_answer_stream() as resp:
+            for line in resp.iter_lines():
+                if line == b"token expired":
+                    raise TokenExpirationError
+                if line == b"data: [DONE]":
+                    break
 
-    return answer
+                if line.startswith(b"data:"):
+                    chunk = json.loads(line.split(b"data:")[1])
+                    delta = chunk["choices"][0]["delta"]
+                    if "content" in delta:
+                        answer += delta["content"]
+
+        return answer
