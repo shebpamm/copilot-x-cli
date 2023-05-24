@@ -16,7 +16,6 @@ def main(
     Args:
         prompt (str): Prompt to send to copilot
     """
-
     query = api.ChatQuery(prompt, shell=shell, chat=chat, explain=explain)
 
     print(query.get_answer_blocking())

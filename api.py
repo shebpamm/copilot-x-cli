@@ -45,9 +45,9 @@ class ChatQuery:
         self.explain = explain
 
         self.bearer_token = get_bearer()
-        self.state = self.init_state()
+        self.state = self.init_state(messages)
 
-    def init_state(self):
+    def init_state(self, messages=[]):
         state = json_data.copy()
 
         self.add_message(state, BASE_INSTRUCTION, "system")
@@ -55,6 +55,8 @@ class ChatQuery:
             self.add_message(state, SHELL_INSTRUCTION, "system")
         if self.chat:
             self.add_message(state, CHAT_INSTRUCTION, "system")
+
+        state['messages'] += messages
 
         return state
 
