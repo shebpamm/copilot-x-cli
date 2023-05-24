@@ -3,7 +3,10 @@ import typer
 
 from . import api
 
+app = typer.Typer()
 
+
+@app.command()
 def main(
     prompt: str = typer.Option(..., prompt=True),
     shell: bool = False,
@@ -19,7 +22,3 @@ def main(
     query = api.ChatQuery(prompt, shell=shell, chat=chat, explain=explain)
 
     print(query.get_answer_blocking())
-
-
-if __name__ == "__main__":
-    typer.run(main)

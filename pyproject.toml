@@ -12,6 +12,8 @@ python = "^3.10"
 requests = "^2.31.0"
 typer = {extras = ["all"], version = "^0.9.0"}
 
+[tool.poetry.scripts]
+x-cli = "x_cli.cli:app"
 
 [build-system]
 requires = ["poetry-core"]
