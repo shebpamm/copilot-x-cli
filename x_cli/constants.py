@@ -51,7 +51,7 @@ Do not prefix the answer with any header.
 
 """
 
-headers = {
+HEADERS = {
     "x-request-id": "9d4f79c9-7104-4e24-a3ac-73349f95af63",
     "openai-organization": "github-copilot",
     "vscode-sessionid": "9188b680-9c71-402e-9e9d-f6d3a99f71f91684844091941",

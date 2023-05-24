@@ -2,6 +2,7 @@
 import typer
 
 from . import api
+from .chat import ChatWindow
 
 app = typer.Typer()
 
@@ -11,7 +12,6 @@ def main(
     prompt: str = typer.Option(..., prompt=True),
     shell: bool = False,
     chat: bool = False,
-    explain: bool = False,
 ):
     """
     Entrypoint.
@@ -19,6 +19,18 @@ def main(
     Args:
         prompt (str): Prompt to send to copilot
     """
-    query = api.ChatQuery(prompt, shell=shell, chat=chat, explain=explain)
+    chatSession = api.ChatSession(shell=shell, chat=chat)
+    response = chatSession.send_chat_blocking(prompt)
+    if chat:
+        window = ChatWindow()
+        with window.live:
+            window.add_message(api.MessageRole.USER, prompt)
+            window.add_message(api.MessageRole.ASSISTANT, response)
 
-    print(query.get_answer_blocking())
+            while True:
+                prompt = window.stream_prompt()
+                window.add_message(api.MessageRole.USER, prompt)
+                response = chatSession.send_chat_blocking(prompt)
+                window.add_message(api.MessageRole.ASSISTANT, response)
+    else:
+        print(response)
