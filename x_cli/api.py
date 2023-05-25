@@ -4,8 +4,7 @@ from enum import Enum
 import requests
 
 from .auth import get_bearer
-from .constants import (BASE_INSTRUCTION, CHAT_INSTRUCTION, HEADERS,
-                        SHELL_INSTRUCTION)
+from .constants import (BASE_INSTRUCTION, CHAT_INSTRUCTION, HEADERS, CODE_INSTRUCTION, SHELL_INSTRUCTION)
 from .errors import TokenExpirationError
 
 
@@ -32,9 +31,11 @@ class ChatSession:
         messages=[],
         shell: bool = False,
         chat: bool = False,
+        code: bool = False,
     ):
         self.shell = shell
         self.chat = chat
+        self.code = code
 
         self.bearer_token = get_bearer()
         self.state = self.init_state(messages)
@@ -47,6 +48,8 @@ class ChatSession:
             self.add_message(state, SHELL_INSTRUCTION, MessageRole.SYSTEM)
         if self.chat:
             self.add_message(state, CHAT_INSTRUCTION, MessageRole.SYSTEM)
+        if self.code:
+            self.add_message(state, CODE_INSTRUCTION, MessageRole.SYSTEM)
 
         state["messages"] += messages
 
@@ -54,6 +57,9 @@ class ChatSession:
 
     def add_message(self, state, content: str, role: MessageRole):
         state["messages"].append({"content": content, "role": role.value})
+
+    def _strip_backticks(self, answer):
+        return answer.replace("```", "").strip('\n')
 
     def get_answer_stream(self):
         HEADERS["authorization"] = f"Bearer {self.bearer_token}"
@@ -90,5 +96,8 @@ class ChatSession:
                         answer += delta["content"]
 
         self.add_message(self.state, answer, MessageRole.ASSISTANT)
+
+        if self.code:
+            return self._strip_backticks(answer)
 
         return answer

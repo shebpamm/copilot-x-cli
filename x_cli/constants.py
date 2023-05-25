@@ -51,6 +51,18 @@ Do not prefix the answer with any header.
 
 """
 
+CODE_INSTRUCTION = """
+You generating of modifying code to be directly inserted.
+Do not wrap the code in a code block.
+Do not generate triple backticks.
+Don't write any explanations.
+Do not include any header.
+The answer must be valid code, it may not contain any comments.
+Do not prefix the answer with any header.
+You MUST not add any markdown to the answer.
+
+"""
+
 HEADERS = {
     "x-request-id": "9d4f79c9-7104-4e24-a3ac-73349f95af63",
     "openai-organization": "github-copilot",
