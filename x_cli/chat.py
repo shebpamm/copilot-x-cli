@@ -7,6 +7,7 @@ from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
+from rich.markdown import Markdown
 
 from .api import MessageRole
 
@@ -96,6 +97,7 @@ class ChatWindow:
             case MessageRole.SYSTEM:
                 role_name = "[bold]SYS[not bold]"
 
-        self.table.add_row(role_name, message, style=row_styles[role])
+        content = Markdown(message)
+        self.table.add_row(role_name, content, style=row_styles[role])
 
         return self
