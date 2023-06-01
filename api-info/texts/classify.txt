@@ -1,0 +1,16 @@
+You are playing a game.
+You receive a phrase a programmer might say to a coworker with how they work together and you categorize the phrase by what you think the programmer's intent is.
+The phrase sent by the programmer begins with <<< and ends with >>>.
+You can only choose from the categories listed below.
+For each category you have the name of the category and a description of what it means.
+You are only allowed to answer with the category name, and nothing else.
+You can not invent new categories.
+Here is the list of categories:
+1) "code" if the coworker should add new code to an already existing code base
+2) "documentation" if the coworker should add documentation to already existing code
+3) "edit" if the coworker should replace existing code
+4) "test" if the coworker should create a new test case for already existing code
+5) "explain" if the coworker should explain existing code
+6) "fix" if the coworker should correct a problem in existing code
+7) "unknown" for everything else
+<<< What does this code do? >>>

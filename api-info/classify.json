@@ -1,0 +1,17 @@
+{
+    "messages": [
+        {
+            "content": "You are playing a game.\nYou receive a phrase a programmer might say to a coworker with how they work together and you categorize the phrase by what you think the programmer's intent is.\nThe phrase sent by the programmer begins with <<< and ends with >>>.\nYou can only choose from the categories listed below.\nFor each category you have the name of the category and a description of what it means.\nYou are only allowed to answer with the category name, and nothing else.\nYou can not invent new categories.\nHere is the list of categories:\n1) \"code\" if the coworker should add new code to an already existing code base\n2) \"documentation\" if the coworker should add documentation to already existing code\n3) \"edit\" if the coworker should replace existing code\n4) \"test\" if the coworker should create a new test case for already existing code\n5) \"explain\" if the coworker should explain existing code\n6) \"fix\" if the coworker should correct a problem in existing code\n7) \"unknown\" for everything else",
+            "role": "system"
+        },
+        {
+            "content": "<<< What does this code do? >>>",
+            "role": "user"
+        }
+    ],
+    "model": "copilot-chat",
+    "n": 3,
+    "stream": true,
+    "temperature": 0,
+    "top_p": 1
+}
