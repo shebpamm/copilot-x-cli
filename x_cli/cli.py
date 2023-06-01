@@ -1,8 +1,10 @@
 """CLI interface for using copilot-x chat."""
-import typer
 from base64 import b64decode
+from pathlib import Path
 
-from . import api
+import typer
+
+from . import actions, api
 from .chat import ChatWindow
 
 app = typer.Typer()
@@ -45,3 +47,20 @@ def prompt(
     chatSession = api.ChatSession(shell=shell, chat=chat, code=code)
     response = chatSession.send_chat_blocking(question)
     print(response)
+
+
+@app.command()
+def action(
+    selection: str,
+    prompt: str = typer.Option(..., prompt=True),
+    base64: bool = False,
+):
+    """Prompt for an action, classify it and run related prompt with code context."""
+    if base64:
+        prompt = b64decode(prompt).decode("utf-8")
+
+    sel = actions.parse_selection(selection)
+
+    action = actions.PromptAction(prompt, sel)
+
+    print(action.perform())

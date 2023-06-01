@@ -1,10 +1,12 @@
+import copy
 import json
 from enum import Enum
 
 import requests
 
 from .auth import get_bearer
-from .constants import (BASE_INSTRUCTION, CHAT_INSTRUCTION, HEADERS, CODE_INSTRUCTION, SHELL_INSTRUCTION)
+from .constants import (BASE_INSTRUCTION, CHAT_INSTRUCTION, CODE_INSTRUCTION,
+                        HEADERS, SHELL_INSTRUCTION)
 from .errors import TokenExpirationError
 
 
@@ -29,37 +31,40 @@ class ChatSession:
     def __init__(
         self,
         messages=[],
+        base: bool = True,
         shell: bool = False,
         chat: bool = False,
         code: bool = False,
     ):
+        self.base = base
         self.shell = shell
         self.chat = chat
         self.code = code
 
         self.bearer_token = get_bearer()
-        self.state = self.init_state(messages)
+        self.init_state(messages)
 
     def init_state(self, messages=[]):
-        state = json_data.copy()
+        self.state = copy.deepcopy(json_data)
 
-        self.add_message(state, BASE_INSTRUCTION, MessageRole.SYSTEM)
+        if self.base:
+            self.add_message(BASE_INSTRUCTION, MessageRole.SYSTEM)
         if self.shell:
-            self.add_message(state, SHELL_INSTRUCTION, MessageRole.SYSTEM)
+            self.add_message(SHELL_INSTRUCTION, MessageRole.SYSTEM)
         if self.chat:
-            self.add_message(state, CHAT_INSTRUCTION, MessageRole.SYSTEM)
+            self.add_message(CHAT_INSTRUCTION, MessageRole.SYSTEM)
         if self.code:
-            self.add_message(state, CODE_INSTRUCTION, MessageRole.SYSTEM)
+            self.add_message(CODE_INSTRUCTION, MessageRole.SYSTEM)
 
-        state["messages"] += messages
+        self.state["messages"] += messages
 
-        return state
+        return self.state
 
-    def add_message(self, state, content: str, role: MessageRole):
-        state["messages"].append({"content": content, "role": role.value})
+    def add_message(self, content: str, role: MessageRole):
+        self.state["messages"].append({"content": content, "role": role.value})
 
     def _strip_backticks(self, answer):
-        return answer.replace("```", "").strip('\n')
+        return answer.replace("```", "").strip("\n")
 
     def get_answer_stream(self):
         HEADERS["authorization"] = f"Bearer {self.bearer_token}"
@@ -74,7 +79,7 @@ class ChatSession:
         )
 
     def send_chat_blocking(self, prompt):
-        self.add_message(self.state, prompt, MessageRole.USER)
+        self.add_message(prompt, MessageRole.USER)
 
         # print(json.dumps(self.state, indent=4))
         answer = ""
@@ -95,7 +100,7 @@ class ChatSession:
                     if "content" in delta:
                         answer += delta["content"]
 
-        self.add_message(self.state, answer, MessageRole.ASSISTANT)
+        self.add_message(answer, MessageRole.ASSISTANT)
 
         if self.code:
             return self._strip_backticks(answer)
