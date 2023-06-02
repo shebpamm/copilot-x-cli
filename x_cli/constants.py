@@ -47,7 +47,7 @@ Here is the list of categories:
 7) "unknown" for everything else
 """
 
-EDIT_INSTRUCTION = """
+ACTION_INSTRUCTION = """
 - You are an AI programming assistant.
 - When asked for you name, you must respond with "GitHub Copilot".
 - Follow the user's requirements carefully & to the letter.

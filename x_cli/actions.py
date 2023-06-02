@@ -1,6 +1,7 @@
 import random
 import re
 import string
+import json
 from enum import Enum
 from pathlib import Path
 
@@ -8,7 +9,7 @@ from pygments.lexers import get_lexer_for_filename
 from pygments.token import Comment
 
 from .api import ChatSession, MessageRole
-from .constants import EDIT_INSTRUCTION, CLASSIFY_INSTRUCTION
+from .constants import ACTION_INSTRUCTION, CLASSIFY_INSTRUCTION
 
 EXTENSTIONS_FILE = Path(__file__).parent / "extensions.json"
 
@@ -28,6 +29,18 @@ class PromptType(Enum):
     EXPLAIN = "explain"
     FIX = "fix"
     UNKNOWN = "unknown"
+
+
+class ActionResponse:
+    def __init__(self, answer: str, prompt_type: PromptType):
+        self.answer = answer
+        self.type = prompt_type
+
+    def json(self):
+        return json.dumps({
+            "answer": self.answer,
+            "type": self.type.value,
+        })
 
 
 class CursorPosition:
@@ -84,7 +97,7 @@ class PromptAction:
         self.selection = selection
         self.session = ChatSession(base=False)
 
-    def perform(self) -> str | None:
+    def perform(self) -> ActionResponse:
         self._void_session()
         self._classify()
         self._detect_language()
@@ -125,6 +138,54 @@ class PromptAction:
             case _:
                 self.type = PromptType.UNKNOWN
 
+    def _ask(self, extract_code=False):
+        anchor = self._generate_anchor()
+        begin_anchor = f"{self.comment_character} BEGIN: {anchor}"
+        end_anchor = f"{self.comment_character} END: {anchor}"
+        """Replace existing code."""
+        self._void_session()
+        self.session.add_message(ACTION_INSTRUCTION, MessageRole.SYSTEM)
+        if self.selection.is_above():
+            self.session.add_message(
+                f"""
+                     I have the following code above the selection:
+                     ```{self.language}
+                     {self.comment_character} FILEPATH: {self.selection.file}
+                     {self.selection.get_above()}
+                     ```
+                     """,
+                MessageRole.USER,
+            )
+
+        self.session.add_message(
+            f"""
+                 I have the following code in the selection:
+                 ```{self.language}
+                 {self.comment_character} FILEPATH: {self.selection.file}
+                 {begin_anchor}
+                 {self.selection.get_selection()}
+                 {end_anchor}
+                 ```
+                 """,
+            MessageRole.USER,
+        )
+        if self.selection.is_below():
+            self.session.add_message(
+                f"""
+                     I have the following code below the selection:
+                     ```{self.language}
+                     {self.comment_character} FILEPATH: {self.selection.file}
+                     {self.selection.get_selection()}
+                     ```
+                     """,
+                MessageRole.USER,
+            )
+        response = self.session.send_chat_blocking(self.prompt)
+        if extract_code:
+            return self._extract_anchors(response, anchor)
+        else:
+            return response.replace(begin_anchor, "").replace(end_anchor, "")
+
     def _detect_language(self):
         """Detect the language based on the file extension."""
         self.lexer = get_lexer_for_filename(self.selection.file)
@@ -160,85 +221,48 @@ class PromptAction:
         """Get content between anchors in file."""
         begin_anchor = f"{self.comment_character} BEGIN: {anchor}"
         end_anchor = f"{self.comment_character} END: {anchor}"
-        res = re.search(
-                f"{begin_anchor}(.*){end_anchor}", data, re.DOTALL
-            )
+        res = re.search(f"{begin_anchor}(.*){end_anchor}", data, re.DOTALL)
         if res:
             return res.group(1).strip("\n")
         else:
-            raise ValueError(f"Could not find anchors {begin_anchor} and {end_anchor} in {data}")
+            raise ValueError(
+                f"Could not find anchors {begin_anchor} and {end_anchor} in {data}"
+            )
 
     def _code(self):
         """Add new code to an already existing code base."""
-        return "not implemented"
+        answer = self._ask(extract_code=True)
+        return ActionResponse(answer, PromptType.CODE)
 
     def _documentation(self):
         """Add documentation to already existing code."""
-        return "not implemented"
+        answer = self._ask(extract_code=True)
+        return ActionResponse(answer, PromptType.DOCUMENTATION)
 
     def _edit(self):
-        anchor = self._generate_anchor()
-        begin_anchor = f"{self.comment_character} BEGIN: {anchor}"
-        end_anchor = f"{self.comment_character} END: {anchor}"
-        """Replace existing code."""
-        self._void_session()
-        self.session.add_message(EDIT_INSTRUCTION, MessageRole.SYSTEM)
-        if self.selection.is_above():
-            self.session.add_message(
-                f"""
-                 I have the following code above the selection:
-                 ```{self.language}
-                 {self.comment_character} FILEPATH: {self.selection.file}
-                 {self.selection.get_above()}
-                 ```
-                 """,
-                MessageRole.USER,
-            )
-
-        self.session.add_message(
-            f"""
-             I have the following code in the selection:
-             ```{self.language}
-             {self.comment_character} FILEPATH: {self.selection.file}
-             {begin_anchor}
-             {self.selection.get_selection()}
-             {end_anchor}
-             ```
-             """,
-            MessageRole.USER,
-        )
-        if self.selection.is_below():
-            self.session.add_message(
-                f"""
-                 I have the following code below the selection:
-                 ```{self.language}
-                 {self.comment_character} FILEPATH: {self.selection.file}
-                 {self.selection.get_selection()}
-                 ```
-                 """,
-                MessageRole.USER,
-            )
-        response = self.session.send_chat_blocking(self.prompt)
-
-        code = self._extract_anchors(response, anchor)
-
-        return code
+        """Edit existing code."""
+        answer = self._ask(extract_code=True)
+        return ActionResponse(answer, PromptType.EDIT)
 
     def _test(self):
         """Create a new test case for already existing code."""
-        return "not implemented"
+        answer = self._ask(extract_code=True)
+        return ActionResponse(answer, PromptType.TEST)
 
     def _explain(self):
         """Explain existing code."""
-        return "not implemented"
+        answer = self._ask()
+        return ActionResponse(answer, PromptType.EXPLAIN)
 
     def _fix(self):
         """Correct a problem in existing code."""
-        return "not implemented"
+        answer = self._ask(extract_code=True)
+        return ActionResponse(answer, PromptType.FIX)
 
     def _unknown(self):
         """Unknown prompt type."""
-        return "not implemented"
+        answer = self._ask()
+        return ActionResponse(answer, PromptType.UNKNOWN)
 
 
 def parse_selection(raw_selection: str) -> FileSelection:
@@ -250,10 +274,6 @@ def parse_selection(raw_selection: str) -> FileSelection:
 
     start, end = lines.split("-")
     try:
-        return FileSelection(
-            file,
-            CursorPosition(int(start)),
-            CursorPosition(int(end))
-        )
+        return FileSelection(file, CursorPosition(int(start)), CursorPosition(int(end)))
     except ValueError:
         raise ValueError("Invalid selection format. Expected <line>:<column>")

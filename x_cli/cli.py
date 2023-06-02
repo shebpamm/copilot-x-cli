@@ -54,8 +54,13 @@ def action(
     selection: str,
     prompt: str = typer.Option(..., prompt=True),
     base64: bool = False,
+    json: bool = False,
 ):
-    """Prompt for an action, classify it and run related prompt with code context."""
+    """
+    Prompt for an action, classify it and run related prompt with code context.
+
+    The arguments are a bit confusing, as the base64 is used for providing input in an encoded format but the json flag is used to output a json object.
+    """
     if base64:
         prompt = b64decode(prompt).decode("utf-8")
 
@@ -63,4 +68,9 @@ def action(
 
     action = actions.PromptAction(prompt, sel)
 
-    print(action.perform())
+    response = action.perform()
+
+    if json:
+        print(response.json())
+    else:
+        print(response.answer)
