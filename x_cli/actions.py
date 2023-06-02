@@ -33,9 +33,8 @@ class PromptType(Enum):
 class CursorPosition:
     """Represents a single cursors position in a specific file."""
 
-    def __init__(self, line: int, column: int):
+    def __init__(self, line: int):
         self.line = line - 1
-        self.column = column - 1
 
 
 class FileSelection:
@@ -76,7 +75,7 @@ class FileSelection:
         return "".join(lines)
 
     def __str__(self):
-        return f"{self.file}:{self.start.line}:{self.start.column}-{self.end.line}:{self.end.column}"
+        return f"{self.file}:{self.start.line}-{self.end.line}"
 
 
 class PromptAction:
@@ -133,6 +132,8 @@ class PromptAction:
             self.language = self.lexer.aliases[0]  # type: ignore
         else:
             self.language = self.lexer.name  # type: ignore
+
+        self.comment_regex = ""
 
         for _, category in self.lexer.tokens.items():  # type: ignore
             for token in category:
@@ -245,18 +246,14 @@ def parse_selection(raw_selection: str) -> FileSelection:
     Create a FileSelection object.
     """
 
-    file, lines = raw_selection.split("::")
+    file, lines = raw_selection.split(":")
 
     start, end = lines.split("-")
-
-    start_line, start_column = start.split(":")
-    end_line, end_column = end.split(":")
-
     try:
         return FileSelection(
             file,
-            CursorPosition(int(start_line), int(start_column)),
-            CursorPosition(int(end_line), int(end_column)),
+            CursorPosition(int(start)),
+            CursorPosition(int(end))
         )
     except ValueError:
         raise ValueError("Invalid selection format. Expected <line>:<column>")
